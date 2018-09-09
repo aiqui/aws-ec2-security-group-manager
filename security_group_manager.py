@@ -16,7 +16,7 @@ class Ec2Manager:
     aSecurityGroups = None
     
     def errorMsg (self, sMsg):
-        print "Error: " + sMsg
+        print("Error: " + sMsg)
         sys.exit(-1)
 
     def verify (self, sMsg, sDefault = ""):
@@ -39,14 +39,14 @@ class Ec2Manager:
                 if bHidden:
                     sInput = getpass.getpass(sPrompt)
                 else:
-                    sInput = raw_input(sPrompt)
+                    sInput = input(sPrompt)
                 if re.search('\w', sInput) != None:
                     return sInput.strip()
                 if bValidStr == False:
                     return '';
         except KeyboardInterrupt:
             print
-            print "Exiting..."
+            print("Exiting...")
             sys.exit(-1)
 
     def isAwsSuccessRequest (self, aResponse):
@@ -64,11 +64,12 @@ class Ec2Manager:
                 sAwsKey = self.getResponse("AWS account access key? ", True, True)
                 self.oClient = boto3.client('ec2', aws_access_key_id = sAwsId, aws_secret_access_key = sAwsKey)
                 aAllGroups = self.oClient.describe_security_groups()
-                self.aSecurityGroups = {}
+                aGroups = {}
                 for aGroup in aAllGroups["SecurityGroups"]:
-                    self.aSecurityGroups[aGroup['GroupId']] = aGroup
+                    aGroups[aGroup['GroupId']] = aGroup
+                self.aSecurityGroups = dict(sorted(aGroups.items(), key=lambda x: x[1]['GroupName'].lower()))
             except botocore.exceptions.ClientError as e:
-                print "Invalid AWS credentials, please try again..."
+                print("Invalid AWS credentials, please try again...")
                 print
                 self.oClient = None
         return self.oClient
@@ -81,8 +82,8 @@ class Ec2Manager:
 
     def printPermissionsTable (self, aGroup):
         """Print the incoming permissions table"""
-        print "Incoming IP Permissions:"
-        print "      %-4s  %-8s %-19s %s" % ('Port', 'Protocol', 'IP range', 'Description')
+        print("Incoming IP Permissions:")
+        print("      %-4s  %-8s %-19s %s" % ('Port', 'Protocol', 'IP range', 'Description'))
         bNoRow = True
         iIndex = 0
         aRanges = []
@@ -93,13 +94,13 @@ class Ec2Manager:
                     sDesc = ''
                     if 'Description' in aRange:
                         sDesc = aRange['Description']
-                    print " %2d.  %4s  %-8s %-19s %s" % (iIndex, aPermit['FromPort'], aPermit['IpProtocol'],
-                                                         aRange['CidrIp'], sDesc)
+                    print(" %2d.  %4s  %-8s %-19s %s" % (iIndex, aPermit['FromPort'], aPermit['IpProtocol'],
+                                                         aRange['CidrIp'], sDesc))
                     aRanges.append({'ip':       aRange['CidrIp'],
                                     'port':     aPermit['FromPort'],
                                     'protocol': aPermit['IpProtocol']})
         if len(aRanges) == 0:
-            print "-- none defined --"
+            print("-- none defined --")
         print
         return aRanges
         
@@ -108,7 +109,7 @@ class Ec2Manager:
 
     def addIpPermissions (self, sGroupId):
         """Add to the IP permissions to a security group"""
-        print "Adding permissions to %s - %s" % (sGroupId,  self.aSecurityGroups[sGroupId]['Description'])
+        print("Adding permissions to %s - %s" % (sGroupId,  self.aSecurityGroups[sGroupId]['Description']))
 
         while True:
             print
@@ -128,7 +129,7 @@ class Ec2Manager:
                 if self.validIp4(sIpRange):
                     break
                 print
-                print "Invalid CIDR IP range, please try again..."
+                print("Invalid CIDR IP range, please try again...")
                 print
 
             sDesc = self.getResponse("Description: ", True)
@@ -145,9 +146,9 @@ class Ec2Manager:
                     ])
                 # pprint(aResponse)
                 if self.isAwsSuccessRequest(aResponse):
-                    print "Permission successfully added"
+                    print("Permission successfully added")
                 else:
-                    print "Permission failed to add"
+                    print("Permission failed to add")
                     
                 print
 
@@ -179,9 +180,9 @@ class Ec2Manager:
                               'IpRanges': [{ 'CidrIp': oRange['ip'] }] }
                         ])
                     if self.isAwsSuccessRequest(aResponse):
-                        print "Permission successfully removed"
+                        print("Permission successfully removed")
                     else:
-                        print "Permission failed to remove"
+                        print("Permission failed to remove")
             
 
     def strLimit (self, sValue, iLength):
@@ -195,14 +196,14 @@ class Ec2Manager:
         iIndex = 0
         while iIndex < 1 or iIndex > len(self.aSecurityGroups):
             print
-            print "      %-12s %-20s %s" % ('Group ID', 'Group Name', 'Description')
+            print("      %-12s %-20s %s" % ('Group ID', 'Group Name', 'Description'))
             n = 0
             for sId, aGroup in self.aSecurityGroups.items():
                 n = n + 1
                 sName = self.strLimit(aGroup['GroupName'], 20)
                 sDesc = self.strLimit(aGroup['Description'], 60)
-                print "  %2d: %-12s %-20s %s" % (n, sId, sName, sDesc)
-            print "   x: exit"
+                print("  %2d: %-12s %-20s %s" % (n, sId, sName, sDesc))
+            print("   x: exit")
             print
             sResponse = self.getResponse("Select a security group (1 to %d): " % n)
             if sResponse == 'x':
@@ -214,10 +215,10 @@ class Ec2Manager:
         """All major actions for a group"""
         aGroup = self.aSecurityGroups[sGroupId]
         while True:
-            print "Action for security group %s - %s: " % (sGroupId, aGroup['Description'])
-            print "  1.  show incoming IP permissions"
-            print "  2.  add to the incoming IP ranges"
-            print "  3.  remove from the IP ranges"
+            print("Action for security group %s - %s: " % (sGroupId, aGroup['Description']))
+            print("  1.  show incoming IP permissions")
+            print("  2.  add to the incoming IP ranges")
+            print("  3.  remove from the IP ranges")
             sResponse = self.getResponse("Action: (exit) ")
             print
             if sResponse == '1':
